@@ -1,0 +1,25 @@
+const D=DATA,$=s=>document.querySelector(s),pg=document.body.dataset.page,fm=n=>n.toLocaleString("ru-RU")+" ₽";
+$("#bg").onclick=()=>$("#nav").classList.toggle("show");
+if(localStorage.big)document.body.classList.add("big");
+$("#vi").onclick=()=>{document.body.classList.toggle("big");localStorage.big=document.body.classList.contains("big")?1:""};
+const card=(x,k)=>{const p=Math.min(100,Math.round(x.got/x.goal*100)),done=x.status=="closed";
+return `<div class="card"><div class="ph">${k=="children"?"🧒":"🤝"}</div><div class="in">${x.dx?`<span class="tag">${x.dx}</span>`:""}<b>${x.name}</b><span class="sm">${x.need||x.story}</span>
+<div class="bar"><i style="width:${p}%"></i></div><span class="sm">${done?"Сбор завершён · ":""}Собрано ${fm(x.got)} из ${fm(x.goal)} (${p}%)${done?"":" · осталось "+fm(x.goal-x.got)}</span>
+<a class="btn" href="${k=="children"?"child.html?id="+x.id:"child.html?id="+x.id}">${done?"Читать историю":"Подробнее"}</a></div></div>`};
+document.querySelectorAll("[data-kind]").forEach(el=>{const k=el.dataset.kind;let L=D[k].filter(x=>!el.dataset.status||x.status==el.dataset.status);if(k=="children"&&!el.dataset.status)L=L.filter(x=>x.status=="open");if(el.dataset.limit)L=L.slice(0,+el.dataset.limit);el.dataset.all=JSON.stringify(L.map(x=>x.id));const draw=l=>el.innerHTML=l.map(x=>card(x,k)).join("")||"<p>Ничего не найдено.</p>";draw(L);el._d=draw;el._l=L});
+const fl=$("#fl");if(fl){const dx=["Все",...new Set(D.children.filter(c=>c.status=="open").map(c=>c.dx))];fl.innerHTML=dx.map((d,i)=>`<button class="${i?"":"on"}">${d}</button>`).join("");
+fl.onclick=e=>{if(e.target.tagName!="BUTTON")return;fl.querySelectorAll("button").forEach(b=>b.classList.remove("on"));e.target.classList.add("on");const c=$("#cl");c._d(c._l.filter(x=>e.target.textContent=="Все"||x.dx==e.target.textContent))}}
+const nl=$("#nl");if(nl)nl.innerHTML=D.news.map(n=>`<div class="card p"><span class="sm">${n[0]}</span><h3>${n[1]}</h3>${n[2]}</div>`).join("");
+const faq=$("#faq");if(faq)faq.innerHTML=[["Как узнать, что деньги дошли?","В разделах «Отчёты» и «Кому помогли» публикуются ежемесячные отчёты и закрытые сборы."],["Можно ли жертвовать регулярно?","Да, в форме пожертвования включите «Помогать ежемесячно»."],["Как получить помощь?","Откройте раздел «Нужна помощь» и заполните заявку."]].map(q=>`<details><summary>${q[0]}</summary>${q[1]}</details>`).join("");
+const t=$("#tot");if(t)t.textContent=fm(D.reports.reduce((s,r)=>s+r[1],0)).replace(" ₽","");
+document.querySelectorAll(".amts").forEach(w=>{const i=w.querySelector("input");w.onclick=e=>{if(e.target.dataset.a){i.value=e.target.dataset.a;w.querySelectorAll("button").forEach(b=>b.classList.remove("on"));e.target.classList.add("on")}}});
+const qf=$("#qf");if(qf)qf.onsubmit=e=>{e.preventDefault();location="donate.html?sum="+$("#qa").value};
+const rt=$("#rt");if(rt){rt.innerHTML="<tr><th>Месяц</th><th>Поступило</th><th>Потрачено</th></tr>"+D.reports.map(r=>`<tr><td>${r[0]}</td><td>${fm(r[1])}</td><td>${fm(r[2])}</td></tr>`).join("");
+const c=$("#ch"),x=c.getContext("2d");c.width=c.clientWidth;const m=Math.max(...D.reports.flat().filter(v=>typeof v=="number")),w=c.width/D.reports.length;
+[...D.reports].reverse().forEach((r,i)=>{[[1,"#2f9e44"],[2,"#e8590c"]].forEach(([j,col],q)=>{const h=r[j]/m*(c.height-30);x.fillStyle=col;x.fillRect(i*w+w*.15+q*w*.33,c.height-20-h,w*.3,h)});x.fillStyle="#333";x.fillText(r[0],i*w+w*.15,c.height-5)});x.fillStyle="#2f9e44";x.fillText("■ поступило",5,12);x.fillStyle="#e8590c";x.fillText("■ потрачено",90,12)}
+document.querySelectorAll(".form[data-ok]").forEach(f=>f.onsubmit=e=>{e.preventDefault();f.outerHTML=`<div class="ok">${f.dataset.ok}</div>`});
+const cd=$("#cd");if(cd){const id=+new URLSearchParams(location.search).get("id"),x=[...D.children,...D.projects].find(a=>a.id==id);
+if(x){const p=Math.round(x.got/x.goal*100),closed=x.status=="closed";document.title=x.name;cd.innerHTML=`<p><a href="javascript:history.back()">← Назад</a></p><h1>${x.name}</h1>${x.dx?`<span class="tag">${x.dx}</span>`:""}<p>${x.story}</p><div class="bar"><i style="width:${Math.min(100,p)}%"></i></div><p><b>${fm(x.got)}</b> из ${fm(x.goal)} (${p}%)</p>${closed?'<div class="ok">Сбор завершён. Спасибо всем!</div>':`<a class="btn big" href="donate.html?to=${id}">Помочь</a>`}<h2>Документы</h2><ul class="docs"><li>Выписка из медицинского заключения — заглушка</li><li>Счёт на оплату — заглушка</li></ul>`}else cd.innerHTML="<h1>Не найдено</h1>"}
+const tg=$("#tg");if(tg){const q=new URLSearchParams(location.search);tg.innerHTML='<option value="0">Где нужнее всего</option>'+[...D.children.filter(c=>c.status=="open"),...D.projects].map(a=>`<option value="${a.id}">${a.name}</option>`).join("");
+if(q.get("to"))tg.value=q.get("to");if(q.get("sum"))$("#da").value=q.get("sum");
+$("#df").onsubmit=e=>{e.preventDefault();$("#df").hidden=true;const t=$("#thx");t.hidden=false;t.textContent=`Спасибо! Демо-платёж ${fm(+$("#da").value)}${$("#rg").checked?" (ежемесячно)":""} → «${tg.options[tg.selectedIndex].text}». Реальный платёж не проводился.`}}
